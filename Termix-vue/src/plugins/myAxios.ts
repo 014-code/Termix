@@ -5,7 +5,7 @@ const myAxios = axios.create({
     baseURL:
     // @ts-ignore
         process.env.NODE_ENV === "production"
-            ? "上线域名"
+            ? "xxx"
             : "http://localhost:7345/api",
 });
 
@@ -19,6 +19,7 @@ myAxios.interceptors.request.use(
     },
     function (error) {
         // 对请求错误做些什么
+        // @ts-ignore
         return Promise.reject(error);
     }
 );
@@ -32,6 +33,7 @@ myAxios.interceptors.response.use(
     },
     function (error) {
         // 对响应错误做点什么
+        // @ts-ignore
         return Promise.reject(error);
     }
 );
