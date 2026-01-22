@@ -5,13 +5,7 @@ const {
     NOT_FOUND_ERROR_CODE,
 } = require("../exception/errorCode");
 
-/**
- * 获取单首音乐
- * @param event
- * @param req
- * @param res
- */
-async function getSingleMusicApi(event, req, res) {
+async function getSingleMusicApi(event, req) {
     const {keywords} = event;
     if (!keywords) {
         throw new MyError(REQUEST_PARAMS_ERROR_CODE, "请输入关键词");
@@ -20,24 +14,15 @@ async function getSingleMusicApi(event, req, res) {
     if (!song) {
         throw new MyError(NOT_FOUND_ERROR_CODE);
     }
-    return successResponse(res, {
-        name: song.name,
-        id: song.id,
-    }, "查询成功");
+    return {data: {name: song.name, id: song.id}, message: "查询成功"};
 }
 
-/**
- * 获取歌单详情
- * @param event
- * @param req
- * @param res
- */
-async function getPlaylistDetailApi(event, req, res) {
+async function getPlaylistDetailApi(event, req) {
     const songs = await getPlaylistDetail();
     if (!songs) {
         throw new MyError(NOT_FOUND_ERROR_CODE);
     }
-    return successResponse(res, songs, "查询成功");
+    return {data: songs, message: "查询成功"};
 }
 
 module.exports = {

@@ -79,7 +79,6 @@ class ExpressServer {
     //后端路由配置
     setRoute(path, handlerFunction) {
         const handler = async (req, res) => {
-            // IP 过滤
             const requestClientIp = getClientIp(req);
             if (!requestClientIp) {
                 return FORBIDDEN_ERROR_CODE;
@@ -99,11 +98,11 @@ class ExpressServer {
                 console.log(
                     `req start path = ${req.path}, clientIp = ${requestClientIp}, params = ${params}`
                 );
-                result = await handlerFunction(event, req, res);
-                // 封装响应
+                const controllerResult = await handlerFunction(event, req);
                 result = {
                     code: 0,
-                    data: result,
+                    data: controllerResult.data,
+                    message: controllerResult.message,
                 };
                 console.log(
                     `req end path = ${
@@ -113,7 +112,6 @@ class ExpressServer {
                     }`
                 );
             } catch (e) {
-                // 全局异常处理
                 if (e instanceof MyError) {
                     result = {
                         code: e.code,

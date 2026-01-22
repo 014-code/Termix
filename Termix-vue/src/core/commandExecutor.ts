@@ -3,7 +3,7 @@ import {ParsedOptions} from "getopts";
 import {commandMap} from "./commandRegister";
 // @ts-ignore
 import getopts from "getopts";
-import TerminalType = YuTerminal.TerminalType;
+import TerminalType = Terminal.TerminalType;
 // import helpCommand from "./commands/terminal/help/helpCommand";
 
 /**

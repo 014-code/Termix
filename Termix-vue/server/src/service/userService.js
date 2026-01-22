@@ -1,3 +1,4 @@
+const {Op} = require("sequelize");
 const MyError = require("../exception");
 const {REQUEST_PARAMS_ERROR_CODE, SYSTEM_ERROR_CODE, NOT_LOGIN_ERROR_CODE} = require("../exception/errorCode");
 const UserModel = require("../model/user");
@@ -72,8 +73,8 @@ async function userLogin(username, password, req) {
     if (!user) {
         throw new MyError(SYSTEM_ERROR_CODE, "用户不存在或密码错误")
     }
-    //设置session登录态
-    req.session.userInfo = user
+    //设置session登录态，只存储纯数据对象避免循环引用
+    req.session.userInfo = user.dataValues;
     return user
 }
 
