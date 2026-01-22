@@ -311,3 +311,410 @@ Termix 项目采用 MIT 许可证开源，这意味着您可以自由地使用�
 项目维护者会定期查看邮件和 GitHub 通知，但可能无法立即回复所有消息。对于紧急问题或需要深入讨论的事项，建议通过 GitHub Discussion 进行交流。对于安全相关的问题，请通过私下渠道报告以避免信息泄露。
 
 感谢您对 Termix 项目的关注和支持，我们期待与您共同打造一个更出色的 Web 终端应用。
+
+
+
+
+
+
+# Termix 命令执行流程
+
+## 命令执行架构图
+
+```mermaid
+graph TB
+    subgraph User[用户层]
+        Input[终端输入]
+        Display[输出展示]
+    end
+
+    subgraph Terminal[Terminal.vue 终端组件]
+        TerminalControl[terminalControl.ts 控制逻辑]
+        Parse[命令解析]
+        History[history.ts 历史记录]
+        Shortcuts[shortcuts.ts 快捷键]
+        Hint[hint.ts 提示信息]
+    end
+
+    subgraph Core[核心执行层]
+        CommandExecutor[commandExecutor.ts 执行器]
+        CommandRegister[commandRegister.ts 注册器]
+    end
+
+    subgraph Commands[命令模块]
+        subgraph UserCommands[用户命令]
+            Login[loginCommand 登录]
+            Logout[logoutCommand 登出]
+            Register[registerCommand 注册]
+        end
+
+        subgraph SystemCommands[系统命令]
+            Info[infoCommand 信息]
+            Date[dateCommand 日期]
+            Ping[pingCommand 测试]
+            Clear[clearCommand 清屏]
+            Goto[gotoCommand 跳转]
+            HistoryCmd[historyCommand 历史]
+            ShortcutCmd[shortcutCommand 快捷键]
+        end
+
+        subgraph FeatureCommands[功能命令]
+            Music[musicCommand 音乐]
+            Fanyi[fanyiCommand 翻译]
+            Background[backgroundCommand 壁纸]
+        end
+    end
+
+    subgraph Backend[后端服务]
+        Controllers[Controllers 控制器]
+        Services[Services 服务层]
+    end
+
+    subgraph Store[状态管理 Pinia]
+        UserStore[用户状态]
+        TermConfigStore[终端配置状态]
+    end
+
+    subgraph API[前端API]
+        UserAPI[userApi.ts]
+        MusicAPI[音乐API]
+    end
+
+    Input --> TerminalControl
+    TerminalControl --> Parse
+    Parse --> CommandExecutor
+    CommandExecutor --> CommandRegister
+    CommandRegister --> Commands
+
+    Commands --> UserStore
+    Commands --> TermConfigStore
+
+    UserCommands --> UserAPI
+    Music --> MusicAPI
+    Background --> Controllers
+
+    UserAPI --> Controllers
+    Controllers --> Services
+
+    Commands -.->|显示结果| User.Display
+```
+
+## 命令执行流程图
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant T as Terminal.vue
+    participant C as CommandExecutor
+    participant R as CommandRegister
+    participant Cmd as 具体命令
+    participant API as 前端API
+    participant S as 后端服务
+    participant DB as 数据库
+    participant Store as Pinia Store
+
+    U->>T: 输入命令
+    T->>T: 解析命令文本
+    T->>C: execute(command, args)
+
+    C->>R: 查找命令处理器
+    R-->>C: 返回命令对象
+
+    alt 命令存在
+        C->>Cmd: validate(args)
+        Cmd-->>C: 验证结果
+
+        alt 参数有效
+            C->>Cmd: execute(args)
+
+            alt 需要用户登录
+                Cmd->>Store: checkLogin()
+                Store-->>Cmd: 登录状态
+
+                alt 未登录
+                    Cmd-->>C: 返回错误
+                    C-->>T: 显示错误信息
+                end
+            end
+
+            alt 需要调用API
+                Cmd->>API: httpRequest()
+                API->>S: REST API 请求
+                S->>DB: 数据库操作
+                DB-->>S: 查询结果
+                S-->>API: 响应数据
+                API-->>Cmd: 返回结果
+            end
+
+            alt 需要后端服务
+                Cmd->>S: 第三方服务调用
+                S->>Netease: 网易云音乐
+                S->>Baidu: 百度翻译
+                S->>Sina: 新浪壁纸
+                Netease-->>S: 音乐数据
+                Baidu-->>S: 翻译结果
+                Sina-->>S: 壁纸数据
+                S-->>Cmd: 服务响应
+            end
+
+            Cmd-->>C: 执行结果
+            C-->>T: 返回输出内容
+            T->>T: 渲染输出结果
+            T-->>U: 显示命令输出
+        else 参数无效
+            Cmd-->>C: 参数错误
+            C-->>T: 显示帮助信息
+            T-->>U: 显示命令用法
+        end
+    else 命令不存在
+        R-->>C: null
+        C-->>T: 显示错误提示
+        T-->>U: 提示命令不存在
+    end
+```
+
+## 命令注册流程
+
+```mermaid
+graph LR
+    subgraph Registration[命令注册]
+        CommandRegister[commandRegister.ts]
+        
+        subgraph UserCommands[用户命令]
+            UC1[loginCommand]
+            UC2[logoutCommand]
+            UC3[registerCommand]
+        end
+        
+        subgraph SystemCommands[系统命令]
+            SC1[infoCommand]
+            SC2[dateCommand]
+            SC3[pingCommand]
+            SC4[clearCommand]
+            SC5[historyCommand]
+            SC6[shortcutCommand]
+        end
+        
+        subgraph FeatureCommands[功能命令]
+            FC1[musicCommand]
+            FC2[fanyiCommand]
+            FC3[backgroundCommand]
+        end
+        
+        UC1 --> CommandRegister
+        UC2 --> CommandRegister
+        UC3 --> CommandRegister
+        SC1 --> CommandRegister
+        SC2 --> CommandRegister
+        SC3 --> CommandRegister
+        SC4 --> CommandRegister
+        SC5 --> CommandRegister
+        SC6 --> CommandRegister
+        FC1 --> CommandRegister
+        FC2 --> CommandRegister
+        FC3 --> CommandRegister
+    end
+```
+
+## 用户命令流程
+
+```mermaid
+flowchart TD
+    A[用户输入命令] --> B{命令类型?}
+    
+    B -->|login| C[loginCommand]
+    B -->|logout| D[logoutCommand]
+    B -->|register| E[registerCommand]
+    
+    C --> F[调用 userApi.login]
+    D --> G[调用 userApi.logout]
+    E --> H[调用 userApi.register]
+    
+    F --> I[发送 POST /api/user/login]
+    G --> J[发送 POST /api/user/logout]
+    H --> K[发送 POST /api/user/register]
+    
+    I --> L[后端验证]
+    J --> M[后端清除Session]
+    K --> N[后端创建用户]
+    
+    L --> O[返回用户信息]
+    M --> P[返回结果]
+    N --> Q[返回用户信息]
+    
+    O --> R[更新 UserStore]
+    Q --> R
+    
+    R --> S[更新 UI 显示]
+    P --> S
+    
+    S --> T[命令执行完成]
+```
+
+## 系统命令流程
+
+```mermaid
+flowchart TD
+    A[用户输入命令] --> B{命令类型?}
+    
+    B -->|info| C[infoCommand]
+    B -->|date| D[dateCommand]
+    B -->|ping| E[pingCommand]
+    B -->|clear| F[clearCommand]
+    B -->|history| G[historyCommand]
+    B -->|shortcut| H[shortcutCommand]
+    
+    C --> I[获取系统信息]
+    D --> J[调用 dayjs 获取时间]
+    E --> K[网络请求测试]
+    F --> L[清空终端显示]
+    G --> M[读取 history.ts]
+    H --> N[读取 shortcuts.ts]
+    
+    I --> O[返回格式化信息]
+    J --> P[返回日期字符串]
+    K --> Q[返回延迟信息]
+    L --> R[终端刷新]
+    M --> S[返回历史列表]
+    N --> T[返回快捷键列表]
+    
+    O --> U[渲染输出]
+    P --> U
+    Q --> U
+    R --> U
+    S --> U
+    T --> U
+    
+    U --> V[命令执行完成]
+```
+
+## 功能命令流程
+
+```mermaid
+flowchart TD
+    A[用户输入命令] --> B{命令类型?}
+    
+    B -->|music| C[musicCommand]
+    B -->|fanyi| D[fanyiCommand]
+    B -->|background| E[backgroundCommand]
+    
+    subgraph Music[音乐命令]
+        C --> C1{子命令?}
+        C1 -->|search| C2[搜索音乐]
+        C1 -->|play| C3[播放音乐]
+        C1 -->|pause| C4[暂停播放]
+        C1 -->|next| C5[下一首]
+        C1 -->|prev| C6[上一首]
+        C1 -->|list| C7[播放列表]
+    end
+    
+    subgraph Fanyi[翻译命令]
+        D --> D1[调用百度翻译API]
+        D1 --> D2[返回翻译结果]
+    end
+    
+    subgraph Background[壁纸命令]
+        E --> E1{子命令?}
+        E1 -->|list| E2[获取壁纸分类]
+        E1 -->|set| E3[设置壁纸]
+        E1 -->|random| E4[随机壁纸]
+        E1 -->|reset| E5[重置壁纸]
+    end
+    
+    C2 --> F[调用网易云音乐API]
+    C3 --> F
+    C4 --> G[音乐控制]
+    C5 --> G
+    C6 --> G
+    C7 --> F
+    
+    F --> H[后端服务]
+    G --> H
+    
+    H --> I[(网易云音乐)]
+    D2 --> J[(百度翻译)]
+    E2 --> K[(新浪壁纸)]
+    E3 --> K
+    E4 --> K
+    E5 --> K
+    
+    I --> L[返回音乐数据]
+    J --> L
+    K --> L
+    
+    L --> M[渲染输出]
+    M --> N[命令执行完成]
+```
+
+## 状态管理流程
+
+```mermaid
+graph TB
+    subgraph Command[命令执行]
+        CMD[具体命令]
+    end
+    
+    subgraph Store[Pinia 状态]
+        UserStore[userStore.ts]
+        TermConfigStore[terminalConfigStore.ts]
+    end
+    
+    subgraph Storage[持久化]
+        LocalStorage[本地存储]
+    end
+    
+    CMD -->|getUserInfo| UserStore
+    CMD -->|isLoggedIn| UserStore
+    CMD -->|getConfig| TermConfigStore
+    CMD -->|saveConfig| TermConfigStore
+    
+    UserStore -->|persist| LocalStorage
+    TermConfigStore -->|persist| LocalStorage
+    
+    LocalStorage -->|restore| UserStore
+    LocalStorage -->|restore| TermConfigStore
+    
+    UserStore -->|provide state| CMD
+    TermConfigStore -->|provide state| CMD
+```
+
+## 核心文件关系
+
+```mermaid
+graph TB
+    subgraph CoreFiles[核心文件]
+        T[Terminal.vue]
+        TC[terminalControl.ts]
+        CE[commandExecutor.ts]
+        CR[commandRegister.ts]
+    end
+    
+    subgraph CommandFiles[命令文件]
+        UC[userCommands.ts]
+        MC[musicCommand.ts]
+        SC[systemCommands.ts]
+    end
+    
+    subgraph StoreFiles[状态文件]
+        US[userStore.ts]
+        TS[terminalConfigStore.ts]
+    end
+    
+    subgraph ApiFiles[API文件]
+        UA[userApi.ts]
+    end
+    
+    T --> TC
+    TC --> CE
+    CE --> CR
+    
+    CR --> UC
+    CR --> MC
+    CR --> SC
+    
+    UC --> UA
+    UC --> US
+    MC --> US
+    US --> TC
+    TS --> TC
+```
