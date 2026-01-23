@@ -135,6 +135,7 @@ class ExpressServer {
             res.send(result);
         };
         this.app.post(this.contextPath + path, handler);
+        this.app.get(this.contextPath + path, handler);
     }
 
     //监听端口

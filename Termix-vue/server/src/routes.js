@@ -33,8 +33,23 @@ const routes = [
   },
   {
     path: "/background/get/random",
-    handler: require("./controller/backgroundController")
-      .getRandomBackgroundApi,
+    handler: require("./controller/backgroundController").getRandomBackgroundApi,
+  },
+  {
+    path: "/system/local-ip",
+    handler: require("./controller/systemController").getLocalIpApi,
+  },
+  {
+    path: "/system/info",
+    handler: require("./controller/systemController").getSysInfoApi,
+  },
+  {
+    path: "/system/process/list",
+    handler: require("./controller/systemController").getProcessListApi,
+  },
+  {
+    path: "/system/process/kill",
+    handler: require("./controller/systemController").killProcessApi,
   },
 ];
 

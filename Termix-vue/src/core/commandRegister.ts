@@ -12,6 +12,9 @@ import pingCommand from "./commands/pingCommand";
 import hintCommand from "./commands/terminal/config/hintCommand";
 import shortcutCommand from "./commands/terminal/shortcut/shortcutCommand";
 import welcomeCommand from "./commands/terminal/config/welcomeCommand";
+import sysCommand from "./commands/system/sysCommand";
+import ipCommand from "./commands/tool/ipCommand";
+import processCommand from "./commands/tool/processCommand";
 
 /**
  * 命令列表（数组元素顺序会影响 help 命令的展示顺序）
@@ -21,6 +24,9 @@ const commandList: CommandType[] = [
     gotoCommand,
     ...userCommands,
     dateCommand,
+    sysCommand,
+    ipCommand,
+    processCommand,
     clearCommand,
     historyCommand,
     helpCommand,
